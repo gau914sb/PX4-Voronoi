@@ -1,0 +1,58 @@
+# Voronoi Pursuit-Evasion Configuration
+# 3D pursuit-evasion game for PX4 drones
+
+# Drone instance assignments
+pursuers:
+  instances: [1, 2, 3, 4]  # PX4 instance numbers for pursuers
+  
+evader:
+  instance: 5              # PX4 instance number for evader
+
+# Initial formation geometry
+formation:
+  type: "tetrahedral"      # Pursuers form regular tetrahedron
+  base_altitude: 10.0      # Center altitude (meters above ground)
+  radius: 6.0              # Distance from center to vertices (meters)
+  evader_at_center: true   # Evader starts at tetrahedron center
+
+# Voronoi control parameters
+voronoi:
+  gamma: 1.0               # Control law parameter (1 for guaranteed capture)
+  pursuer_strategy: 2      # Strategy 2 from paper (normalized K-based)
+  evader_strategy: 1       # Strategy 1 (move toward furthest corner)
+  max_velocity: 0.5        # Maximum velocity (m/s) - norm_bound
+  
+# Game parameters
+game:
+  capture_radius: 0.4      # Distance threshold for capture (meters)
+  max_duration: 300.0      # Maximum game time (seconds)
+  control_frequency: 50.0  # Voronoi computation frequency (Hz)
+  
+# Safety limits
+safety:
+  max_altitude: 50.0       # Maximum allowed altitude (meters)
+  min_altitude: 5.0        # Minimum allowed altitude (meters)
+  boundary_radius: 20.0    # Maximum horizontal distance from origin (meters)
+  emergency_land: true     # Auto-land if boundary violated
+
+# Data logging
+logging:
+  enabled: true
+  frequency: 50.0          # Logging rate (Hz)
+  directory: "data"        # Data directory (relative to script location)
+  include_orientation: true # Log roll, pitch, yaw
+  include_controls: true    # Log commanded velocities
+
+# ROS2 topics
+topics:
+  voronoi_cmd_vel: "/voronoi/cmd_vel"  # Base topic for velocity commands
+  position_feedback: "vehicle_local_position_v1"  # PX4 position topic
+  ready_status: "/voronoi/ready"       # Ready state coordination
+  game_status: "/voronoi/game_status"   # Game state (INIT, ACTIVE, CAPTURED, etc.)
+  capture_detected: "/voronoi/capture"  # Capture event
+
+# Initial position setup parameters
+init:
+  takeoff_altitude: 10.0   # Intermediate altitude for initial positioning
+  position_threshold: 0.3  # Distance threshold to consider "position reached" (meters)
+  max_wait_time: 60.0      # Maximum time to wait for all drones ready (seconds)
