@@ -264,10 +264,15 @@ async def setup_and_move_drone(controller, target_position, config):
         return (controller.instance, False)
 
 
-async def hold_positions_until_takeover(controllers, config):
+async def hold_positions_until_takeover(controllers, config, max_wait_time=None):
     """
     Hold drones at their positions until agents take over
     Monitors /voronoi/agent_active/instance_X topics
+    
+    Args:
+        controllers: List of DroneController instances
+        config: Configuration dictionary
+        max_wait_time: Maximum time to wait for agents (seconds). None = wait forever
     """
     # Create takeover monitor node
     class TakeoverMonitor(Node):
@@ -303,17 +308,34 @@ async def hold_positions_until_takeover(controllers, config):
     monitor_thread = threading.Thread(target=spin_monitor, daemon=True)
     monitor_thread.start()
     
-    print(f"\n⏳ Holding positions - waiting for agents to take over...")
-    print(f"   Launch game with: ./launch_game.sh")
-    print(f"   Press Ctrl+C to exit early\n")
+    if max_wait_time:
+        print(f"\n⏳ Holding positions for {max_wait_time}s (or until agents connect)...")
+        print(f"   Launch agents with: ./launch_game.sh")
+        print(f"   Will auto-exit and transfer control\n")
+    else:
+        print(f"\n⏳ Holding positions - waiting for agents to take over...")
+        print(f"   Launch game with: ./launch_game.sh")
+        print(f"   Press Ctrl+C to exit early\n")
+    
+    start_time = asyncio.get_event_loop().time()
     
     try:
         while not monitor.all_active():
             # Controllers continue publishing via their control_loop timers
             await asyncio.sleep(0.1)
+            
+            # Check timeout
+            if max_wait_time:
+                elapsed = asyncio.get_event_loop().time() - start_time
+                if elapsed > max_wait_time:
+                    print(f"\n⏱️  Timeout reached ({max_wait_time}s)")
+                    print(f"   Agents should now take over control")
+                    print(f"   Exiting initial positions script\n")
+                    break
         
-        print(f"\n✅ All agents active - handoff complete!")
-        print(f"   Initial positions script can now exit safely\n")
+        if monitor.all_active():
+            print(f"\n✅ All agents active - handoff complete!")
+            print(f"   Initial positions script can now exit safely\n")
         
         # Hold for 1 more second to ensure smooth transition
         await asyncio.sleep(1.0)
@@ -324,8 +346,12 @@ async def hold_positions_until_takeover(controllers, config):
         monitor.destroy_node()
 
 
-async def main():
-    """Main function"""
+async def main(auto_handover_time=None):
+    """Main function
+    
+    Args:
+        auto_handover_time: Auto-exit after N seconds (for automated launch)
+    """
     # Load configuration
     config = load_config()
     
@@ -435,7 +461,7 @@ async def main():
     print(f"\n🎯 All drones at initial positions!")
     
     # Hold positions until agents take over
-    await hold_positions_until_takeover(controllers, config)
+    await hold_positions_until_takeover(controllers, config, max_wait_time=auto_handover_time)
     
     # Cleanup
     for controller in controllers:
@@ -450,8 +476,15 @@ async def main():
 
 
 if __name__ == '__main__':
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Move drones to initial tetrahedral formation')
+    parser.add_argument('--auto-handover', type=int, default=None,
+                        help='Auto-exit after N seconds for automated launch (default: wait for agents)')
+    args = parser.parse_args()
+    
     try:
-        asyncio.run(main())
+        asyncio.run(main(auto_handover_time=args.auto_handover))
     except KeyboardInterrupt:
         print("\n⚠️  Interrupted by user")
         rclpy.shutdown()

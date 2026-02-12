@@ -12,15 +12,18 @@ if [ ! -f "config.yaml" ]; then
     exit 1
 fi
 
-# Source ROS2 workspace (adjust path as needed)
-if [ -f "/home/gaurav/ros2_ws/install/setup.bash" ]; then
-    source /home/gaurav/ros2_ws/install/setup.bash
-    echo "   Sourced ROS2 workspace"
-elif [ -f "$HOME/ros2_ws/install/setup.bash" ]; then
-    source $HOME/ros2_ws/install/setup.bash
-    echo "   Sourced ROS2 workspace"
+# Source ROS2 workspaces for PX4
+PX4_BASE="/home/gaurav/ros2_ws/PX4-Autopilot-Official"
+
+if [ -f "$PX4_BASE/install/setup.bash" ] && [ -f "$PX4_BASE/ros2_ws/install/setup.bash" ]; then
+    source $PX4_BASE/install/setup.bash
+    source $PX4_BASE/ros2_ws/install/setup.bash
+    echo "   ✅ Sourced PX4 ROS2 workspaces"
 else
-    echo "   ⚠️  Warning: ROS2 workspace not found, some dependencies may be missing"
+    echo "   ❌ Error: PX4 ROS2 workspaces not found!"
+    echo "   Expected: $PX4_BASE/install/setup.bash"
+    echo "            $PX4_BASE/ros2_ws/install/setup.bash"
+    exit 1
 fi
 
 echo "1️⃣  Starting Voronoi Computation Node..."

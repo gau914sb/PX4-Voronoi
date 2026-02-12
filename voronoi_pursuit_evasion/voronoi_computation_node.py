@@ -60,6 +60,7 @@ class VoronoiComputationNode(Node):
         self.capture_detected = False
         self.captured_by = None
         self.capture_time = None
+        self.shutdown_timer = None
         
         # ROS2 QoS
         qos = QoSProfile(
@@ -178,9 +179,18 @@ class VoronoiComputationNode(Node):
                 status_msg.data = 'CAPTURED'
                 self.game_status_pub.publish(status_msg)
                 
+                # Schedule shutdown after 2 seconds
+                self.get_logger().info('Shutting down in 2 seconds...')
+                self.shutdown_timer = self.create_timer(2.0, self.shutdown_callback)
+                
                 return True
         
         return False
+    
+    def shutdown_callback(self):
+        """Gracefully shutdown the computation node"""
+        self.get_logger().info('✅ Computation node shutdown complete')
+        raise SystemExit(0)
     
     def control_loop(self):
         """Main control loop at 50Hz"""

@@ -11,7 +11,7 @@ evader:
 # Initial formation geometry
 formation:
   type: "tetrahedral"      # Pursuers form regular tetrahedron
-  base_altitude: 10.0      # Center altitude (meters above ground)
+  base_altitude: 20.0      # Center altitude (meters above ground)
   radius: 6.0              # Distance from center to vertices (meters)
   evader_at_center: true   # Evader starts at tetrahedron center
 
@@ -20,7 +20,7 @@ voronoi:
   gamma: 1.0               # Control law parameter (1 for guaranteed capture)
   pursuer_strategy: 2      # Strategy 2 from paper (normalized K-based)
   evader_strategy: 1       # Strategy 1 (move toward furthest corner)
-  max_velocity: 0.5        # Maximum velocity (m/s) - norm_bound
+  max_velocity: 1.0        # Maximum velocity (m/s) - norm_bound
   
 # Game parameters
 game:
