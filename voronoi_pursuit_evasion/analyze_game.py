@@ -571,6 +571,7 @@ def main():
     parser = argparse.ArgumentParser(description='Analyze Voronoi pursuit-evasion game data')
     parser.add_argument('data_dir', nargs='?', default='data/', help='Data directory containing CSV files')
     parser.add_argument('--no-animation', action='store_true', help='Skip animation generation')
+    parser.add_argument('--full-trajectory', action='store_true', help='Plot full trajectory (default: VORONOI phase only)')
     args = parser.parse_args()
     
     # Load data
@@ -580,6 +581,21 @@ def main():
     
     # Load Voronoi vertices and edges if available
     voronoi_vertices, voronoi_edges = load_voronoi_vertices(sim_dir)
+    
+    # Filter data to VORONOI phase only (unless --full-trajectory specified)
+    if not args.full_trajectory:
+        print("\n🎯 Filtering to VORONOI phase only...")
+        filtered_drones = {}
+        for drone_id, info in drones.items():
+            voronoi_data = info['data'][info['data']['phase'] == 'VORONOI']
+            if len(voronoi_data) > 0:
+                filtered_drones[drone_id] = {
+                    'role': info['role'],
+                    'data': voronoi_data.copy(),
+                    'file': info['file']
+                }
+                print(f"   Drone {drone_id}: {len(voronoi_data)} samples (was {len(info['data'])})")
+        drones = filtered_drones
     
     # Output directory is same as simulation directory
     output_dir = sim_dir
